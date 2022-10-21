@@ -2,17 +2,16 @@
 
 import logging
 import re
-import time
 from datetime import datetime
 from pathlib import Path
 
 import yaml
 from fire import Fire
-from tiny_storage import Unit
+from tiny_storage import Unit, Type
 from todoist_api_python.api import TodoistAPI
 
 
-config = Unit('todoist_transactions')
+config = Unit('todoist_transactions', Type.global_config)
 log = logging.getLogger(__name__)
 
 
@@ -31,28 +30,26 @@ class Cli:
 
         inbox = next(p for p in api.get_projects() if p.is_inbox_project)
 
-        while True:
-            tasks = api.get_tasks(project_id=inbox.id)
+        tasks = api.get_tasks(project_id=inbox.id)
 
-            for t in tasks:
-                if (
-                    (m := re.match(r'^T\s+(\S+)\s+(\S+)\s*$', t.content)) and
-                    api.close_task(t.id)
-                ):
-                    append(
-                        Path(config('journal_file')
-                            .put(lambda: input("Journal file: "))
-                        ),
-                        {
-                            "date": datetime.now(),
-                            "amount": -int(m.group(2)),
-                            "comment": m.group(1),
-                        }
-                    )
+        for t in tasks:
+            if (
+                (m := re.match(r'^T\s+(\S+)\s+(\S+)\s*$', t.content)) and
+                api.close_task(t.id)
+            ):
+                append(
+                    Path(config('journal_file')
+                        .put(lambda: input("Journal file: "))
+                    ),
+                    {
+                        "date": datetime.now(),
+                        "amount": -int(m.group(2)),
+                        "comment": m.group(1),
+                    }
+                )
 
-                    log.info(f'Appended {t.content!r}')
+                log.info(f'Appended {t.content!r}')
 
-                time.sleep(5000)
 
     def setup(self):
         config('api_token').put(lambda: input("Todoist API token: "))
