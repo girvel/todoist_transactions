@@ -16,6 +16,7 @@ log = logging.getLogger(__name__)
 
 
 def append(path, entry):
+    path.touch()
     l = yaml.safe_load(path.read_text())
     l = [entry] + l
     path.write_text(yaml.safe_dump(l))
@@ -52,8 +53,8 @@ class Cli:
 
 
     def setup(self):
-        config('api_token').put(lambda: input("Todoist API token: "))
-        config('journal_file').put(lambda: input("Journal file: "))
+        config('api_token').push(lambda: input("Todoist API token: "))
+        config('journal_file').push(lambda: input("Journal file: "))
 
 
 if __name__ == '__main__':
