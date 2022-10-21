@@ -10,7 +10,7 @@ from tiny_storage import Unit
 from todoist_api_python.api import TodoistAPI
 
 
-config = Unit('todoist_parser')
+config = Unit('todoist_transactions')
 api = TodoistAPI(config('api_token').put(lambda: input("Your API token: ")))
 log = logging.getLogger(__name__)
 
@@ -28,7 +28,6 @@ def main():
         tasks = api.get_tasks(project_id=inbox.id)
 
         for t in tasks:
-            print(f"{t.content!r}", re.match(r'^T\s+(\S+)\s+(\S+)\s*$', t.content))
             if (
                 (m := re.match(r'^T\s+(\S+)\s+(\S+)\s*$', t.content)) and
                 api.close_task(t.id)
@@ -45,6 +44,8 @@ def main():
                 )
 
                 log.info(f'Appended {t.content!r}')
+
+            time.sleep(5000)
 
 
 if __name__ == '__main__':
