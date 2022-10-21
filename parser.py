@@ -1,3 +1,5 @@
+#!/usr/bin/env python3.10
+
 import logging
 import re
 import time
@@ -11,7 +13,6 @@ from todoist_api_python.api import TodoistAPI
 
 
 config = Unit('todoist_transactions')
-api = TodoistAPI(config('api_token').put(lambda: input("Your API token: ")))
 log = logging.getLogger(__name__)
 
 
@@ -21,32 +22,42 @@ def append(path, entry):
     path.write_text(yaml.safe_dump(l))
 
 
-def main():
-    inbox = next(p for p in api.get_projects() if p.is_inbox_project)
+class Cli:
+    def __call__(self):
+        api = TodoistAPI(
+            config('api_token')
+                .put(lambda: input("Todoist API token: "))
+        )
 
-    while True:
-        tasks = api.get_tasks(project_id=inbox.id)
+        inbox = next(p for p in api.get_projects() if p.is_inbox_project)
 
-        for t in tasks:
-            if (
-                (m := re.match(r'^T\s+(\S+)\s+(\S+)\s*$', t.content)) and
-                api.close_task(t.id)
-            ):
-                append(
-                    Path(config('journal_file')
-                        .put(lambda: input("Journal file: "))
-                    ),
-                    {
-                        "date": datetime.now(),
-                        "amount": -int(m.group(2)),
-                        "comment": m.group(1),
-                    }
-                )
+        while True:
+            tasks = api.get_tasks(project_id=inbox.id)
 
-                log.info(f'Appended {t.content!r}')
+            for t in tasks:
+                if (
+                    (m := re.match(r'^T\s+(\S+)\s+(\S+)\s*$', t.content)) and
+                    api.close_task(t.id)
+                ):
+                    append(
+                        Path(config('journal_file')
+                            .put(lambda: input("Journal file: "))
+                        ),
+                        {
+                            "date": datetime.now(),
+                            "amount": -int(m.group(2)),
+                            "comment": m.group(1),
+                        }
+                    )
 
-            time.sleep(5000)
+                    log.info(f'Appended {t.content!r}')
+
+                time.sleep(5000)
+
+    def setup(self):
+        config('api_token').put(lambda: input("Todoist API token: "))
+        config('journal_file').put(lambda: input("Journal file: "))
 
 
 if __name__ == '__main__':
-    Fire(main)
+    Fire(Cli())
