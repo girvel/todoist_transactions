@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 def append(path, entry):
     path.touch()
     l = yaml.safe_load(path.read_text())
-    l = [entry] + l
+    l = [entry] + (l or [])
     path.write_text(yaml.safe_dump(l))
 
 
